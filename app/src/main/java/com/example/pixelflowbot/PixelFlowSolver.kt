@@ -1,58 +1,102 @@
 package com.example.pixelflowbot
 
+import android.graphics.Bitmap
 import android.graphics.Point
-import android.graphics.Rect
-import kotlin.math.abs
+import java.util.ArrayDeque
 
 /**
- * This is a prototype solver scaffold for Pixel Flow.
- * It models the board as a grid of colors and a pool of tiles / keys.
- *
- * The real implementation requires device-level testing on Pixel Flow to calibrate:
- * 1) board boundaries
- * 2) color samples
- * 3) tile positions and key tiles
- * 4) clickable action coordinates
+ * A real solver must be tuned against a real device and actual Pixel Flow screens.
+ * This class is a clean board model and planning shell, not a fake claim of complete success.
  */
 class PixelFlowSolver {
 
-    data class Cell(val color: Int, val isKey: Boolean = false)
+    data class Tile(val colorId: Int, val isKey: Boolean = false, val isBlocked: Boolean = false)
 
-    fun solveBoard(board: Array<IntArray>, availableColors: List<Int>): List<String> {
-        // Placeholder: real solver should parse board and produce action list.
-        // For now we just return empty list to avoid incorrect automation.
+    data class BoardState(
+        val rows: Int,
+        val cols: Int,
+        val tiles: Array<IntArray>,
+        val availablePigs: List<Pig>
+    )
+
+    data class Pig(
+        val id: Int,
+        val colorId: Int,
+        val ammo: Int,
+        val inQueue: Boolean = true
+    )
+
+    data class Move(
+        val pigId: Int,
+        val target: Point,
+        val actionType: String
+    )
+
+    fun analyzeBitmap(bitmap: Bitmap): BoardState {
+        // Real implementation must detect board bounds and pixels.
+        val width = bitmap.width
+        val height = bitmap.height
+        val rows = 0
+        val cols = 0
+        val tiles = Array(rows) { IntArray(cols) }
+        val pigs = emptyList<Pig>()
+        return BoardState(rows, cols, tiles, pigs)
+    }
+
+    fun findBestSequence(board: BoardState): List<Move> {
+        // This is a skeleton only. Real logic needs:
+        // 1. detect playable tiles
+        // 2. map colors to target cells
+        // 3. choose a pig by color and ammo
+        // 4. simulate queue changes and slot use
+        // 5. search for valid move order
         return emptyList()
     }
 
-    fun detectBoardBounds(bitmap: android.graphics.Bitmap): Rect {
-        return Rect(0, 0, bitmap.width, bitmap.height)
+    fun isTileUsable(board: BoardState, x: Int, y: Int): Boolean {
+        if (y < 0 || x < 0) return false
+        if (y >= board.rows || x >= board.cols) return false
+        return board.tiles[y][x] != 0
     }
 
-    fun sampleColorAt(point: Point): Int {
-        // Replace with real bitmap sampling after OCR/vision calibration.
-        return 0
+    fun nextBestPig(board: BoardState): Pig? {
+        return board.availablePigs.firstOrNull()
     }
 
-    fun findMatchingMoves(board: Array<IntArray>, color: Int): List<Point> {
-        val found = mutableListOf<Point>()
-        val rows = board.size
-        val cols = board[0].size
+    fun buildGraphFromBoard(board: BoardState): Map<Int, List<Int>> {
+        // Placeholder for graph-based solving.
+        return emptyMap()
+    }
 
-        for (r in 0 until rows) {
-            for (c in 0 until cols) {
-                if (board[r][c] == color) {
-                    found.add(Point(c, r))
+    fun bfsSolve(start: Int, goal: Int, graph: Map<Int, List<Int>>): List<Int> {
+        val queue = ArrayDeque<Int>()
+        val visited = mutableSetOf<Int>()
+        val parent = mutableMapOf<Int, Int?>()
+        parent[start] = null
+        queue.add(start)
+        visited.add(start)
+
+        while (queue.isNotEmpty()) {
+            val current = queue.removeFirst()
+            if (current == goal) {
+                val path = mutableListOf<Int>()
+                var cursor: Int? = current
+                while (cursor != null) {
+                    path.add(cursor)
+                    cursor = parent[cursor]
+                }
+                return path.asReversed()
+            }
+
+            for (neighbor in graph[current].orEmpty()) {
+                if (neighbor !in visited) {
+                    visited.add(neighbor)
+                    parent[neighbor] = current
+                    queue.add(neighbor)
                 }
             }
         }
-        return found
-    }
 
-    fun isSafeMove(board: Array<IntArray>, point: Point): Boolean {
-        val row = point.y
-        val col = point.x
-        if (row < 0 || col < 0) return false
-        if (row >= board.size || col >= board[0].size) return false
-        return board[row][col] != 0
+        return emptyList()
     }
 }

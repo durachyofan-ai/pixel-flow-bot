@@ -1,54 +1,37 @@
 package com.example.pixelflowbot
 
-import android.app.Activity
 import android.content.Intent
-import android.net.Uri
-import android.os.Bundle
 import android.provider.Settings
-import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.example.pixelflowbot.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private var botRunning = false
 
-    override fun onCreate(savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        binding.statusText.text = "Status: prototype ready"
+
         binding.startButton.setOnClickListener {
-            startBot()
+            if (isAccessibilityServiceEnabled()) {
+                binding.statusText.text = "Status: bot engine is active"
+            } else {
+                binding.statusText.text = "Status: enable accessibility service"
+                openAccessibilitySettings()
+            }
         }
 
         binding.stopButton.setOnClickListener {
-            stopBot()
+            binding.statusText.text = "Status: stopped"
         }
 
         binding.openAccessibilitySettings.setOnClickListener {
             openAccessibilitySettings()
         }
-    }
-
-    private fun startBot() {
-        val serviceEnabled = isAccessibilityServiceEnabled()
-        if (!serviceEnabled) {
-            binding.statusText.text = "Status: Enable accessibility service in Settings"
-            openAccessibilitySettings()
-            return
-        }
-
-        botRunning = true
-        binding.statusText.text = "Status: bot running"
-        Log.d("PixelFlowBot", "Bot started")
-    }
-
-    private fun stopBot() {
-        botRunning = false
-        binding.statusText.text = "Status: stopped"
-        Log.d("PixelFlowBot", "Bot stopped")
     }
 
     private fun openAccessibilitySettings() {
@@ -61,6 +44,8 @@ class MainActivity : AppCompatActivity() {
             contentResolver,
             Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
         )
-        return enabledServices?.contains(packageName + "/" + PixelFlowAccessibilityService::class.java.name) == true
+
+        val expected = packageName + "/" + PixelFlowAccessibilityService::class.java.name
+        return enabledServices?.contains(expected) == true
     }
 }
